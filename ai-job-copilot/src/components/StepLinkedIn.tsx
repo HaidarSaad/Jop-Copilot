@@ -1,5 +1,6 @@
 "use client";
 
+import { Clipboard, DownloadSimple, Trash, LinkedinLogo, Spinner } from "@phosphor-icons/react";
 import { downloadAsPDF } from "@/lib/pdfExport";
 import { sanitizeForFilename } from "@/lib/utils";
 
@@ -32,9 +33,9 @@ export default function StepLinkedIn({
           {t("توليد رسالة جذب قصيرة لمسؤولي التوظيف.", "Generate a short outreach message for recruiters.")}
         </p>
         <button onClick={onGenerate} disabled={loading}
-          className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 rounded-xl hover:from-amber-600 hover:to-orange-700 disabled:opacity-50 transition-all font-medium flex items-center justify-center gap-2">
-          {loading ? <><span className="animate-spin">⏳</span> {t("جارٍ التوليد...", "Generating...")}</>
-            : <><span>💼</span> {t("توليد رسالة LinkedIn", "Generate LinkedIn Message")}</>}
+          className="w-full bg-gradient-to-r from-sky-600 to-blue-700 text-white py-3 rounded-xl hover:from-sky-700 hover:to-blue-800 disabled:opacity-50 transition-all font-medium flex items-center justify-center gap-2">
+          {loading ? <><Spinner size={18} className="animate-spin" /> {t("جارٍ التوليد...", "Generating...")}</>
+            : <><LinkedinLogo size={18} weight="fill" /> {t("توليد رسالة LinkedIn", "Generate LinkedIn Message")}</>}
         </button>
       </div>
       {linkedinMessage && (
@@ -42,9 +43,9 @@ export default function StepLinkedIn({
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-800 dark:text-white">{t("رسالة LinkedIn", "LinkedIn Message")}</h3>
             <div className="flex gap-2">
-              <button onClick={copy} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">📋 {t("نسخ", "Copy")}</button>
-              <button onClick={download} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">⬇️ {t("تحميل", "Download")}</button>
-              <button onClick={() => setLinkedinMessage("")} className="px-3 py-1.5 text-sm rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">🗑️</button>
+              <button onClick={copy} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"><Clipboard size={14} />{t("نسخ", "Copy")}</button>
+              <button onClick={download} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"><DownloadSimple size={14} />{t("تحميل", "Download")}</button>
+              <button onClick={() => setLinkedinMessage("")} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"><Trash size={14} /></button>
             </div>
           </div>
           <textarea

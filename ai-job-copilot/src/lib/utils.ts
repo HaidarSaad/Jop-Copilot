@@ -20,10 +20,15 @@ export function sanitizePrompt(text: string): string {
   const unixPath = /\/(?:[\w.-]+\/)+[\w.-]+\.\w{2,4}/g;
   // UNC paths (\\server\...)
   const uncPath = /\\\\[\w.-]+\\(?:[^\\\n]*\\)*[^\\\n]*\.\w{2,4}/g;
-  // Bare filenames with file/image extensions (catches "image.png", "file.pdf" etc.)
-  const bareFile = /\b\w+\.(png|jpg|jpeg|gif|svg|webp|bmp|pdf|doc|docx|xls|xlsx|txt|csv)\b/gi;
+  // URLs (http://...)
+  const url = /https?:\/\/[^\s]+\.\w{2,4}\b/gi;
+  // Bare filenames like "image.png", "my-photo.jpg", logo.svg, report.pdf etc.
+  // Matches word chars, hyphens, underscores before dot + common extensions
+  const bareFile = /[\w-]+\.(png|jpg|jpeg|gif|svg|webp|bmp|avif|heic|ico|tiff?|psd|raw|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|json|xml|yaml|yml|md|css|js|ts|jsx|tsx|env)\b/gi;
   
-  return text.replace(bareFile, "[file]").replace(winPath, "[file path]").replace(unixPath, "[file path]").replace(uncPath, "[file path]");
+  // Order: strip full paths FIRST so "C:\path\image.png" is fully removed,
+  // THEN catch any remaining bare filenames not part of a path.
+  return text.replace(url, "[url]").replace(winPath, "[file path]").replace(unixPath, "[file path]").replace(uncPath, "[file path]").replace(bareFile, "[file]");
 }
 
 export function extractJobTitle(text: string): string {

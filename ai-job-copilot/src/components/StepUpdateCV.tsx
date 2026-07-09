@@ -1,5 +1,6 @@
 "use client";
 
+import { Clipboard, DownloadSimple, Trash, Sparkle, Spinner } from "@phosphor-icons/react";
 import PdfUploader from "./PdfUploader";
 import { downloadAsPDF } from "@/lib/pdfExport";
 import { sanitizeForFilename } from "@/lib/utils";
@@ -90,10 +91,10 @@ export default function StepUpdateCV({
         <button
           onClick={onGenerate}
           disabled={loading || (!oldCv && !experiencePoints)}
-          className="mt-4 w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
+          className="mt-4 w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-white py-3 rounded-xl hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
         >
-          {loading ? <><span className="animate-spin">⏳</span> {t("جارٍ التوليد...", "Generating...")}</>
-            : <><span>✨</span> {t("توليد السيرة المحدثة", "Generate Updated CV")}</>}
+          {loading ? <><Spinner size={18} className="animate-spin" /> {t("جارٍ التوليد...", "Generating...")}</>
+            : <><Sparkle size={18} /> {t("توليد السيرة المحدثة", "Generate Updated CV")}</>}
         </button>
       </div>
 
@@ -102,9 +103,9 @@ export default function StepUpdateCV({
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-800 dark:text-white">{t("السيرة المحدثة", "Updated CV")}</h3>
             <div className="flex gap-2">
-              <button onClick={handleCopy} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">📋 {t("نسخ", "Copy")}</button>
-              <button onClick={handleDownload} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">⬇️ {t("تحميل", "Download")}</button>
-              <button onClick={() => setUpdatedCv("")} className="px-3 py-1.5 text-sm rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">🗑️</button>
+              <button onClick={handleCopy} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"><Clipboard size={14} />{t("نسخ", "Copy")}</button>
+              <button onClick={handleDownload} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"><DownloadSimple size={14} />{t("تحميل", "Download")}</button>
+              <button onClick={() => setUpdatedCv("")} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"><Trash size={14} /></button>
             </div>
           </div>
 

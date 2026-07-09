@@ -1,5 +1,6 @@
 "use client";
 
+import { Clipboard, DownloadSimple, Trash, NotePencil, Spinner } from "@phosphor-icons/react";
 import { downloadAsPDF } from "@/lib/pdfExport";
 import { sanitizeForFilename } from "@/lib/utils";
 
@@ -43,9 +44,9 @@ export default function StepCoverLetter({
           <div className="flex gap-2">{btn("junior", "مبتدئ", "Junior")}{btn("mid", "متوسط", "Mid-Level")}{btn("executive", "قيادي", "Executive")}</div>
         </div>
         <button onClick={onGenerate} disabled={loading}
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all font-medium flex items-center justify-center gap-2">
-          {loading ? <><span className="animate-spin">⏳</span> {t("جارٍ التوليد...", "Generating...")}</>
-            : <><span>📝</span> {t("توليد خطاب التقديم", "Generate Cover Letter")}</>}
+          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all font-medium flex items-center justify-center gap-2">
+          {loading ? <><Spinner size={18} className="animate-spin" /> {t("جارٍ التوليد...", "Generating...")}</>
+            : <><NotePencil size={18} /> {t("توليد خطاب التقديم", "Generate Cover Letter")}</>}
         </button>
       </div>
       {coverLetter && (
@@ -53,9 +54,9 @@ export default function StepCoverLetter({
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-800 dark:text-white">{t("خطاب التقديم", "Cover Letter")}</h3>
             <div className="flex gap-2">
-              <button onClick={copy} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">📋 {t("نسخ", "Copy")}</button>
-              <button onClick={download} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">⬇️ {t("تحميل", "Download")}</button>
-              <button onClick={() => setCoverLetter("")} className="px-3 py-1.5 text-sm rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">🗑️</button>
+              <button onClick={copy} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"><Clipboard size={14} />{t("نسخ", "Copy")}</button>
+              <button onClick={download} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"><DownloadSimple size={14} />{t("تحميل", "Download")}</button>
+              <button onClick={() => setCoverLetter("")} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"><Trash size={14} /></button>
             </div>
           </div>
           <textarea

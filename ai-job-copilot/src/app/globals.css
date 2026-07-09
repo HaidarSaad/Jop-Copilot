@@ -3,37 +3,58 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg: #f8fafc;
-  --fg: #0f172a;
-  --card: #ffffff;
-  --card-border: #e2e8f0;
-  --muted: #64748b;
-  --accent: #2563eb;
+  --color-primary: #1E3A5F;
+  --color-on-primary: #FFFFFF;
+  --color-secondary: #2563EB;
+  --color-accent: #059669;
+  --color-on-accent: #FFFFFF;
+  --color-background: #F8FAFC;
+  --color-foreground: #0F172A;
+  --color-card: #FFFFFF;
+  --color-card-border: #E4E7EB;
+  --color-muted: #F1F3F5;
+  --color-muted-fg: #64748B;
+  --color-destructive: #DC2626;
+  --color-on-destructive: #FFFFFF;
 }
 
 .dark {
-  --bg: #0f172a;
-  --fg: #f1f5f9;
-  --card: #1e293b;
-  --card-border: #334155;
-  --muted: #94a3b8;
-  --accent: #3b82f6;
+  --color-primary: #3B82F6;
+  --color-on-primary: #FFFFFF;
+  --color-secondary: #60A5FA;
+  --color-accent: #34D399;
+  --color-on-accent: #0F172A;
+  --color-background: #0F172A;
+  --color-foreground: #F1F5F9;
+  --color-card: #1E293B;
+  --color-card-border: #334155;
+  --color-muted: #1E293B;
+  --color-muted-fg: #94A3B8;
+  --color-destructive: #EF4444;
+  --color-on-destructive: #FFFFFF;
 }
 
 @theme inline {
-  --color-bg: var(--bg);
-  --color-fg: var(--fg);
-  --color-card: var(--card);
-  --color-border: var(--card-border);
-  --color-muted: var(--muted);
-  --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--color-background);
+  --color-fg: var(--color-foreground);
+  --color-card-bg: var(--color-card);
+  --color-card-border: var(--color-card-border);
+  --color-muted: var(--color-muted);
+  --color-muted-fg: var(--color-muted-fg);
+  --color-primary: var(--color-primary);
+  --color-on-primary: var(--color-on-primary);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-on-accent: var(--color-on-accent);
+  --color-destructive: var(--color-destructive);
+  --color-on-destructive: var(--color-on-destructive);
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 body {
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
@@ -43,4 +64,4 @@ body {
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #94A3B8; border-radius: 3px; }

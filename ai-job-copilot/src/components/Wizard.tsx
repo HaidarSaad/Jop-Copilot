@@ -4,7 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { storage } from "@/lib/storage";
 import { PROMPTS } from "@/lib/prompts";
 import { extractJobTitle, extractCandidateName, sanitizeForFilename, sanitizePrompt } from "@/lib/utils";
+import { Gear, Sun, Moon, Robot, Translate, WarningOctagon, X } from "@phosphor-icons/react";
 import Settings from "./Settings";
+import HeroSection from "./HeroSection";
+import FeaturesGrid from "./FeaturesGrid";
+import ProgressBar from "./ProgressBar";
 import StepUpdateCV from "./StepUpdateCV";
 import StepTailorCV from "./StepTailorCV";
 import StepCoverLetter from "./StepCoverLetter";
@@ -31,7 +35,7 @@ async function callGemini(apiKey: string, prompt: string) {
     const msg = data?.error?.message || JSON.stringify(data);
     if (res.status === 429) throw new Error("Gemini API quota exhausted. Use Groq or OpenAI in Settings.");
     if (msg.includes("does not support") && msg.includes("input")) {
-      throw new Error("Gemini thinks your text contains a file path. Please remove any local file paths (e.g., C:\\...) from your input and try again, or switch to Groq.");
+      throw new Error("Gemini detected a filename or file path in your text. Remove any file names (like image.png, file.pdf, C:\\...) or paste as plain text and try again, or switch to Groq.");
     }
     throw new Error(`Gemini: ${msg}`);
   }
@@ -73,6 +77,7 @@ export default function Wizard() {
   const [error, setError] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [dark, setDark] = useState(false);
+  const [showHero, setShowHero] = useState(true);
 
   const [oldCv, setOldCv] = useState("");
   const [expPts, setExpPts] = useState("");
@@ -139,38 +144,33 @@ export default function Wizard() {
       <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40 transition-colors">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🤖</span>
+            <Robot size={24} className="text-primary dark:text-secondary" weight="fill" />
             <h1 className="text-xl font-bold text-slate-800 dark:text-white">{t("مساعد التقديم الذكي", "Job Copilot")}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => { const next = lang === "ar" ? "en" : "ar"; setLang(next); storage.setLanguage(next); }} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">{lang === "ar" ? "English" : "العربية"}</button>
-            <button onClick={toggleDark} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">{dark ? "☀️" : "🌙"}</button>
-            <button onClick={() => setShowSettings(true)} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">⚙️</button>
+            <button onClick={() => { const next = lang === "ar" ? "en" : "ar"; setLang(next); storage.setLanguage(next); }} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1.5"><Translate size={16} />{lang === "ar" ? "English" : "العربية"}</button>
+            <button onClick={toggleDark} className="p-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors">{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
+            <button onClick={() => setShowSettings(true)} className="p-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"><Gear size={18} /></button>
           </div>
         </div>
       </header>
 
-      {showSettings && <Settings language={lang} onClose={() => setShowSettings(false)} />}
+      {showSettings && <Settings language={lang} onClose={() => setShowSettings(false)} onClearAll={() => { setLang("en"); setDark(false); storage.setLanguage("en"); storage.setDarkMode(false); document.documentElement.classList.remove("dark"); }} />}
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      {showHero ? (
+        <>
+          <HeroSection language={lang} onStart={() => setShowHero(false)} />
+          <FeaturesGrid language={lang} />
+        </>
+      ) : (
+        <div className="max-w-4xl mx-auto px-4 py-6">
         {error && (
           <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl text-red-700 dark:text-red-300 flex items-center gap-2">
-            <span>⚠️</span><span className="flex-1">{error}</span>
-            <button onClick={() => setError("")} className="text-red-500 hover:text-red-700">✕</button>
+            <WarningOctagon size={18} className="shrink-0" /><span className="flex-1">{error}</span>
+            <button onClick={() => setError("")} className="text-red-500 hover:text-red-700"><X size={16} /></button>
           </div>
         )}
-
-        <nav className="mb-8 overflow-x-auto">
-          <div className="flex gap-2 min-w-max p-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            {STEPS.map((s, i) => (
-              <button key={s.id} onClick={() => setCs(s.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${cs === s.id ? "bg-blue-600 text-white shadow-md" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"}`}>
-                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 border-current">{i + 1}</span>
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </nav>
+        <ProgressBar steps={STEPS} currentId={cs} language={lang} onNavigate={setCs} />
 
         <div>
           {cs === "update-cv" && (
@@ -208,6 +208,7 @@ export default function Wizard() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
