@@ -12,7 +12,7 @@ interface Props {
 
 const t = (lang: "ar" | "en") => (ar: string, en: string) => lang === "ar" ? ar : en;
 
-export default function Settings({ language, onClose }: Props) {
+export default function Settings({ language, onClose, onClearAll }: Props) {
   const [apiKey, setApiKey] = useState("");
   const [provider, setProvider] = useState("gemini");
   const [saved, setSaved] = useState(false);

@@ -19,14 +19,18 @@ function sanitizeTextForPdf(input) {
     const hyphenMatch = line.match(/^(.*?)-\s*$/);
     if (hyphenMatch && i + 1 < lines.length) {
       const next = lines[i + 1] || '';
-      out.push(hyphenMatch[1] + next.trim());
-      i += 2;
-      lastWasBlank = false;
-      continue;
+      const combined = (hyphenMatch[1] + next.trim()).replace(/[^\p{L}\p{N}]/gu, '');
+      if (combined.length > 3 && !hyphenMatch[1].includes('-') && !next.includes('-')) {
+        out.push(hyphenMatch[1] + next.trim());
+        i += 2;
+        lastWasBlank = false;
+        continue;
+      }
     }
+    const shortExceptions = new Set(['a', 'A', 'I']);
     const isShortToken = (str) => {
       const core = str.replace(/[^\p{L}\p{N}]/gu, '');
-      return core.length <= 2 && core.length > 0;
+      return core.length <= 2 && core.length > 0 && !shortExceptions.has(str.trim());
     };
     let runLen = 0;
     for (let j = i; j < lines.length; j++) {
@@ -42,14 +46,13 @@ function sanitizeTextForPdf(input) {
       lastWasBlank = false;
       continue;
     }
-    // otherwise keep the line as-is (trim trailing carriage returns), then fix in-word splits
     let fixedLine = line.replace(/\r/g, '');
     const tokens = fixedLine.split(/\s+/);
     const merged = [];
     for (let t = 0; t < tokens.length; t++) {
       const cur = tokens[t];
       const next = tokens[t + 1];
-      if (next && /\p{L}/u.test(cur) && /^[\p{L}]$/u.test(next)) {
+      if (next && /\p{L}{2,}/u.test(cur) && /^[\p{L}]$/u.test(next) && (cur + next).length > 3) {
         merged.push(cur + next);
         t++;
         continue;
@@ -169,12 +172,12 @@ for (let i = 0; i < lines.length; i++) {
   const trimmed = line.trim();
   const headings = ['Professional Summary','Education','Leadership & Community Involvement','Certifications','Projects','Skills','Technical Skills','Soft Skills','Keywords'];
   if (headings.some(h => h.toLowerCase() === trimmed.toLowerCase())) {
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     const wrapped = doc.splitTextToSize(trimmed, mw);
     doc.text(wrapped, ml, y);
     y += wrapped.length * lh;
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     continue;
   }

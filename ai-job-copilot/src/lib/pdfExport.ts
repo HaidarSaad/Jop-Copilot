@@ -17,19 +17,18 @@ export function downloadAsPDF(text: string, filename: string) {
     newPageIfNeeded(lh);
     doc.setFontSize(size);
     let x = ml;
-    for (const p of parts) {
+    for (let pi = 0; pi < parts.length; pi++) {
+      const p = parts[pi];
       if (!p.text) continue;
-      // Use font-style only to rely on the built-in default font and ensure bold works
-      doc.setFont(undefined, p.bold ? "bold" : "normal");
-      // Ensure p.text doesn't contain control/zero-width chars
+      doc.setFont("helvetica", p.bold ? "bold" : "normal");
       const safeText = p.text.replace(/\u00AD|\u200B|\u200C|\u200D|\uFEFF/g, "");
-      const wrapped = doc.splitTextToSize(safeText, mw - (x - ml));
+      const remaining = mw - (x - ml);
+      const wrapped = doc.splitTextToSize(safeText, remaining > 10 ? remaining : mw);
       for (let i = 0; i < wrapped.length; i++) {
         const w = wrapped[i];
         if (i > 0) { x = ml; y += lh; newPageIfNeeded(lh); }
         doc.text(w, x, y);
-        // Add a small space width after each chunk so adjacent parts don't stick
-        x += doc.getTextWidth(w + " ");
+        x += doc.getTextWidth(w);
       }
     }
     y += lh;
@@ -78,20 +77,24 @@ export function downloadAsPDF(text: string, filename: string) {
         continue;
       }
 
-      // Heuristic: handle hyphenated line-breaks and join short runs of single-character lines
-      // 1) If a line ends with a hyphen-like char, join with next line (remove hyphen)
+      // Handle hyphenated line-breaks: only join if the result forms a real word (not a compound)
       const hyphenMatch = line.match(/^(.*?)-\s*$/);
       if (hyphenMatch && i + 1 < lines.length) {
         const next = lines[i + 1] || "";
-        out.push(hyphenMatch[1] + next.trim());
-        i += 2;
-        lastWasBlank = false;
-        continue;
+        const combined = (hyphenMatch[1] + next.trim()).replace(/[^\p{L}\p{N}]/gu, "");
+        // Avoid joining intentional compounds like "eJPTv2-INE", "TCP/IP" split across lines
+        if (combined.length > 3 && !hyphenMatch[1].includes("-") && !next.includes("-")) {
+          out.push(hyphenMatch[1] + next.trim());
+          i += 2;
+          lastWasBlank = false;
+          continue;
+        }
       }
 
+      const shortExceptions = new Set(["a", "A", "I"]);
       const isShortToken = (str: string) => {
         const core = str.replace(/[^\p{L}\p{N}]/gu, "");
-        return core.length <= 2 && core.length > 0;
+        return core.length <= 2 && core.length > 0 && !shortExceptions.has(str.trim());
       };
 
       let runLen = 0;
@@ -113,26 +116,24 @@ export function downloadAsPDF(text: string, filename: string) {
       // otherwise keep the line as-is (trim trailing carriage returns)
       let fixedLine = line.replace(/\r/g, "");
 
-      // Fix common in-word spaces like `Nma p` -> `Nmap`, or `Hyper V` -> `HyperV`
+      // Fix broken in-word splits like `Nma p` -> `Nmap` (single letter split off)
       const tokens = fixedLine.split(/\s+/);
       const merged: string[] = [];
       for (let t = 0; t < tokens.length; t++) {
         const cur = tokens[t];
         const next = tokens[t + 1];
-        if (next && /\p{L}/u.test(cur) && /^[\p{L}]$/u.test(next)) {
-          // merge cur + next (e.g., 'Nma' + 'p' -> 'Nmap')
+        if (next && /\p{L}{2,}/u.test(cur) && /^[\p{L}]$/u.test(next) && (cur + next).length > 3) {
           merged.push(cur + next);
-          t++; // skip next
+          t++;
           continue;
         }
         merged.push(cur);
       }
       fixedLine = merged.join(" ");
-      // Additionally, collapse sequences where many tokens are short (e.g., letters separated)
+      // Collapse sequences where most tokens are short (vertical-letter paste)
       const parts = fixedLine.split(/\s+/);
       const shortSeq = parts.filter(p => p.replace(/[^\p{L}\p{N}]/gu, "").length <= 2);
       if (shortSeq.length >= Math.floor(parts.length / 2) && parts.length > 1) {
-        // join tokens when line seems to be mostly short fragments
         fixedLine = parts.join("");
       }
 
