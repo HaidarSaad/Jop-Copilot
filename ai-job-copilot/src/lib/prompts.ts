@@ -20,13 +20,15 @@ Rules:
 
 Critical: You MUST wrap ANY new or modified bullet with [ADD] and [/ADD] markers. Existing content kept as-is should NOT be wrapped.
 
-Formatting:
-- Use "## " for section titles (e.g., ## Experience, ## Education, ## Skills)
-- Separate each section with "---" on its own line
-- Use **bold** for company names and job titles only
+Formatting (CRITICAL — follow exactly):
+- Each section title MUST start with "## " followed by bold text. Example: ## **Experience**, ## **Education**, ## **Skills**
+- After each section title, put "---" on its own line before the first bullet
+- Use **bold** for company names and job titles as well
+- Use a blank line before and after each "---" separator
 - Start each bullet with "- "
 - One bullet per line
 - No tables, columns, special characters, or emojis
+- Leave a blank line between sections
 
 Output the entire updated CV in English only.
 `,
@@ -58,17 +60,19 @@ Output format:
 ## Missing Keywords
 - List keywords from the job description that are genuinely missing from the CV (only if CV has content)
 
-## Tailored CV
+## **Tailored CV**
 [Output the complete tailored CV here. START with the personal information header (name, email, phone, LinkedIn, address) exactly as in the REAL CV, then include ALL sections from the REAL CV. This must be a real, complete CV using ONLY data from the REAL CV section above.]
 ---
 
-Formatting for Tailored CV:
-- Use "## " for section titles
-- Separate each section with "---" on its own line
-- Use **bold** for company names and job titles only
+Formatting for Tailored CV (CRITICAL — follow exactly):
+- Each section title MUST start with "## " followed by bold text. Example: ## **Experience**, ## **Education**, ## **Skills**
+- After each section title, put "---" on its own line before the first bullet
+- Use **bold** for company names and job titles as well
+- Use a blank line before and after each "---" separator
 - Start each bullet with "- "
 - One bullet per line
 - No tables, columns, special characters, or emojis
+- Leave a blank line between sections
 
 REMEMBER: You are working with a REAL CV provided above. Do not create a new one. Do not use templates.
 `,
@@ -91,13 +95,15 @@ Required:
 4. Do NOT add any new sections, jobs, education, or skills.
 5. Keep everything in English.
 
-Formatting:
-- Use "## " for section titles
-- Separate each section with "---" on its own line
-- Use **bold** for company names and job titles only
+Formatting (CRITICAL — follow exactly):
+- Each section title MUST start with "## " followed by bold text. Example: ## **Experience**, ## **Education**, ## **Skills**
+- After each section title, put "---" on its own line before the first bullet
+- Use **bold** for company names and job titles as well
+- Use a blank line before and after each "---" separator
 - Start each bullet with "- "
 - One bullet per line
 - No tables, columns, special characters, or emojis
+- Leave a blank line between sections
 
 Output the refined CV in English only.
 `,

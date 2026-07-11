@@ -36,7 +36,7 @@ function removeItem(key: string) {
 export const storage = {
   getApiKey: () => getItem<string>(KEYS.API_KEY) ?? "",
   setApiKey: (v: string) => setItem(KEYS.API_KEY, v),
-  getProvider: () => getItem<string>(KEYS.PROVIDER) ?? "gemini",
+  getProvider: () => getItem<string>(KEYS.PROVIDER) ?? "groq",
   setProvider: (v: string) => setItem(KEYS.PROVIDER, v),
   getOldCv: () => getItem<string>(KEYS.OLD_CV) ?? "",
   setOldCv: (v: string) => setItem(KEYS.OLD_CV, v),

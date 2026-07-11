@@ -23,7 +23,7 @@
 | Groq | `llama-3.3-70b-versatile` | Working (preferred) |
 | OpenAI | `gpt-4o-mini` | Fallback |
 
-- Storage default provider is `"gemini"` — switch to Groq in Settings
+- Storage default provider is `"groq"` — switch away only if Groq is unavailable
 - `sanitizePrompt()` strips file paths and bare filenames before every API call (prevents Gemini "does not support input" errors)
 
 ## CV Format (enforced in all prompts)

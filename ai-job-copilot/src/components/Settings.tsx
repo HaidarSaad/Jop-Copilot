@@ -35,13 +35,13 @@ export default function Settings({ language, onClose, onClearAll }: Props) {
   const handleClear = () => {
     storage.clearAll();
     setApiKey("");
-    setProvider("gemini");
+    setProvider("groq");
     onClearAll?.();
   };
 
   const options = [
+    { id: "groq", label: "Groq Llama 3 (Recommended)", desc: loc("مجاني (30 طلب/دقيقة)", "Free (30 req/min)") },
     { id: "gemini", label: "Gemini 2.0 Flash", desc: loc("مجاني (1500/يوم)", "Free (1500/day)") },
-    { id: "groq", label: "Groq Llama 3", desc: loc("مجاني (30 طلب/دقيقة)", "Free (30 req/min)") },
     { id: "openai", label: "OpenAI GPT-4o-mini", desc: loc("مدفوع (رخيص جداً)", "Paid (very cheap)") },
   ];
 

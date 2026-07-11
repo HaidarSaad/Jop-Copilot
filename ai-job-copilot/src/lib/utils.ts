@@ -14,21 +14,19 @@ export function stripImages(text: string): string {
 
 export function sanitizePrompt(text: string): string {
   if (!text) return "";
-  // Windows paths (C:\...)
-  const winPath = /[A-Za-z]:\\(?:[^\\\n]*\\)*[^\\\n]*\.\w{2,4}/g;
-  // Unix paths (/home/...)
-  const unixPath = /\/(?:[\w.-]+\/)+[\w.-]+\.\w{2,4}/g;
-  // UNC paths (\\server\...)
-  const uncPath = /\\\\[\w.-]+\\(?:[^\\\n]*\\)*[^\\\n]*\.\w{2,4}/g;
-  // URLs (http://...)
-  const url = /https?:\/\/[^\s]+\.\w{2,4}\b/gi;
-  // Bare filenames like "image.png", "my-photo.jpg", logo.svg, report.pdf etc.
-  // Matches word chars, hyphens, underscores before dot + common extensions
-  const bareFile = /[\w-]+\.(png|jpg|jpeg|gif|svg|webp|bmp|avif|heic|ico|tiff?|psd|raw|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|json|xml|yaml|yml|md|css|js|ts|jsx|tsx|env)\b/gi;
-  
-  // Order: strip full paths FIRST so "C:\path\image.png" is fully removed,
-  // THEN catch any remaining bare filenames not part of a path.
-  return text.replace(url, "[url]").replace(winPath, "[file path]").replace(unixPath, "[file path]").replace(uncPath, "[file path]").replace(bareFile, "[file]");
+  // URLs
+  let s = text.replace(/https?:\/\/[^\s]+(?=[\s,.!?;:)\]]|$)/gi, "[url]");
+  // Windows paths: D:\anything\file.ext (handles Unicode, Arabic, spaces)
+  s = s.replace(/[A-Za-z]:\\(?:[^\\\n]*\\)*[^\\\n]*\.\w{2,8}/g, "[file path]");
+  // Windows paths with forward slashes
+  s = s.replace(/[A-Za-z]:\/(?:[^\/\n]*\/)*[^\/\n]*\.\w{2,8}/g, "[file path]");
+  // Unix paths: /home/user/file.ext
+  s = s.replace(/\/(?:[^\s\/]+\/)+[^\s\/]+\.\w{2,8}/g, "[file path]");
+  // UNC paths: \\server\share\file.ext
+  s = s.replace(/\\\\[^\\\n]+(?:\\[^\\\n]*)*\\[^\\\n]*\.\w{2,8}/g, "[file path]");
+  // Catch-all: any filename-like token ending with common extensions
+  s = s.replace(/\b[\w\u0600-\u06FF\u00C0-\u024F-]+\.(png|jpg|jpeg|gif|svg|webp|bmp|avif|heic|ico|tiff?|psd|raw|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|json|xml|yaml|yml|md|css|js|ts|jsx|tsx|env)\b/gi, "[file]");
+  return s;
 }
 
 export function extractJobTitle(text: string): string {
@@ -67,10 +65,14 @@ export function extractCandidateName(text: string): string {
 }
 
 export function extractTailoredCV(text: string): string {
-  const idx = text.indexOf("## Tailored CV");
+  const markers = ["## Tailored CV", "## **Tailored CV**"];
+  let idx = -1;
+  for (const m of markers) {
+    idx = text.indexOf(m);
+    if (idx !== -1) { idx += m.length; break; }
+  }
   if (idx === -1) return text;
-  const after = text.slice(idx + 15).trim();
-  // Skip the description line if present
+  const after = text.slice(idx).trim();
   const lines = after.split("\n");
   if (lines[0] && lines[0].startsWith("[")) return lines.slice(1).join("\n").trim();
   return after;
