@@ -36,7 +36,14 @@ function removeItem(key: string) {
 export const storage = {
   getApiKey: () => getItem<string>(KEYS.API_KEY) ?? "",
   setApiKey: (v: string) => setItem(KEYS.API_KEY, v),
-  getProvider: () => getItem<string>(KEYS.PROVIDER) ?? "groq",
+  getProvider: () => {
+    const saved = getItem<string>(KEYS.PROVIDER);
+    // Only allow valid providers, default to groq
+    if (saved === "groq" || saved === "openai") return saved;
+    // If it's "gemini" or anything else, reset to groq
+    if (saved) { setItem(KEYS.PROVIDER, "groq"); }
+    return "groq";
+  },
   setProvider: (v: string) => setItem(KEYS.PROVIDER, v),
   getOldCv: () => getItem<string>(KEYS.OLD_CV) ?? "",
   setOldCv: (v: string) => setItem(KEYS.OLD_CV, v),

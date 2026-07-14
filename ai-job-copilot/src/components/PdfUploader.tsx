@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { extractTextFromPDF } from "@/lib/utils";
+import { extractTextFromPDF, sanitizePrompt } from "@/lib/utils";
 
 interface Props {
   onTextExtracted: (text: string) => void;
@@ -16,27 +16,27 @@ export default function PdfUploader({ onTextExtracted, language }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const loc = t(language);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError("");
-    const file = e.target.files?.[0];
-    if (!file) {
-      setError(loc("الرجاء اختيار ملف PDF", "Please select a PDF file"));
-      return;
-    }
-    setLoading(true);
-    try {
-      const text = await extractTextFromPDF(file);
-      if (text.trim()) {
-        onTextExtracted(text);
-      } else {
-        setError(loc("لم يتم استخراج نص من الملف. قد يكون ممسوحاً ضوئياً.", "No text extracted. The PDF may be scanned."));
+const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      setError("");
+      const file = e.target.files?.[0];
+      if (!file) {
+        setError(loc("الرجاء اختيار ملف PDF", "Please select a PDF file"));
+        return;
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : loc("فشل قراءة الملف", "Failed to read file"));
-    } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(true);
+      try {
+        const text = await extractTextFromPDF(file);
+        if (text.trim()) {
+          onTextExtracted(sanitizePrompt(text));
+        } else {
+          setError(loc("لم يتم استخراج نص من الملف. قد يكون ممسوحاً ضوئياً.", "No text extracted. The PDF may be scanned."));
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : loc("فشل قراءة الملف", "Failed to read file"));
+      } finally {
+        setLoading(false);
+      }
+    };
 
   return (
     <div>

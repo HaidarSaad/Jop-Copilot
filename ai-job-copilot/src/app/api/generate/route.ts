@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sanitizePrompt } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -6,10 +7,12 @@ export async function POST(req: NextRequest) {
     if (!apiKey) return NextResponse.json({ error: "API key is required" }, { status: 400 });
     if (!prompt) return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
 
+    const cleanPrompt = sanitizePrompt(prompt);
+
     if (provider === "openai") {
-      return await handleOpenAI(apiKey, prompt);
+      return await handleOpenAI(apiKey, cleanPrompt);
     }
-    return await handleGemini(apiKey, prompt);
+    return await handleGemini(apiKey, cleanPrompt);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: `Error: ${msg}` }, { status: 500 });
