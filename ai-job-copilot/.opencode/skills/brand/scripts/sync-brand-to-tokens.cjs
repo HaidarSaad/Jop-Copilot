@@ -1,248 +1,201 @@
 #!/usr/bin/env node
 /**
- * sync-brand-to-tokens.cjs
- *
- * Syncs brand-guidelines.md colors → design-tokens.json → design-tokens.css
- *
- * Usage:
- *   node sync-brand-to-tokens.cjs
- *   node sync-brand-to-tokens.cjs --dry-run
+ * Sync brand-guidelines.md → design-tokens.json + design-tokens.css
+ * Run: node .opencode/skills/brand/scripts/sync-brand-to-tokens.cjs
  */
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
 
-// Paths
-const BRAND_GUIDELINES = 'docs/brand-guidelines.md';
-const DESIGN_TOKENS_JSON = 'assets/design-tokens.json';
-const DESIGN_TOKENS_CSS = 'assets/design-tokens.css';
-const GENERATE_TOKENS_SCRIPT = '.claude/skills/design-system/scripts/generate-tokens.cjs';
+const GUIDELINES_PATH = path.resolve(__dirname, '../../../../docs/brand-guidelines.md');
+const TOKENS_JSON_PATH = path.resolve(__dirname, '../../../../assets/design-tokens.json');
+const TOKENS_CSS_PATH = path.resolve(__dirname, '../../../../assets/design-tokens.css');
 
-/**
- * Extract color info from brand guidelines markdown
- */
-function extractColorsFromMarkdown(content) {
-  const colors = {
-    primary: { name: 'primary', shades: {} },
-    secondary: { name: 'secondary', shades: {} },
-    accent: { name: 'accent', shades: {} }
+function parseMarkdownTable(tableContent) {
+  const rows = tableContent.split('\n')
+    .map(r => r.trim())
+    .filter(r => r.startsWith('|') && !r.match(/^\|[\s\-:|]+\|$/));
+  
+  if (rows.length < 2) return [];
+  
+  // Skip header row (first row after filtering)
+  return rows.slice(1).map(row => {
+    const cols = row.split('|').map(c => c.trim()).filter((_, i) => i > 0 && i < row.split('|').length - 1);
+    return cols;
+  }).filter(cols => cols.length > 0);
+}
+
+function stripBackticks(s) {
+  return s.replace(/`/g, '').trim();
+}
+
+function parseGuidelines(content) {
+  const tokens = {
+    colors: {},
+    gradients: {},
+    typography: {},
+    spacing: {},
+    borderRadius: {},
+    shadows: {}
   };
 
-  // Match a "| Label | #hex |" markdown table row. Bold around the label
-  // (**Label**) is optional, so this handles both the bundled starter template
-  // ("| Primary Blue | #2563EB |") and bolded variants.
-  const rowRe = /\|\s*\*{0,2}([^*|]+?)\*{0,2}\s*\|\s*#([A-Fa-f0-9]{6})\b/g;
-
-  // 1) Quick Reference table — hex only, no parenthesized name required.
-  const quickRef = {
-    primary: /Primary Color\s*\|\s*#([A-Fa-f0-9]{6})/i,
-    secondary: /Secondary Color\s*\|\s*#([A-Fa-f0-9]{6})/i,
-    accent: /Accent Color\s*\|\s*#([A-Fa-f0-9]{6})/i
-  };
-  for (const key of Object.keys(quickRef)) {
-    const m = content.match(quickRef[key]);
-    if (m) colors[key].base = `#${m[1]}`;
-  }
-
-  // 2) Dedicated "### <Role> Colors" tables — assign base/dark/light by the
-  //    row label keyword.
-  const assignFromSection = (heading, target) => {
-    const section = content.match(new RegExp(`### ${heading}[\\s\\S]*?(?=\\n###|$)`, 'i'));
-    if (!section) return;
-    for (const m of section[0].matchAll(rowRe)) {
-      const label = m[1].trim().toLowerCase();
-      const hex = `#${m[2]}`;
-      if (label.includes('dark')) target.dark = hex;
-      else if (label.includes('light')) target.light = hex;
-      else if (!target.base) target.base = hex;
-    }
-  };
-  assignFromSection('Primary Colors', colors.primary);
-  assignFromSection('Secondary Colors', colors.secondary);
-  assignFromSection('Accent Colors', colors.accent);
-
-  // 3) Fallback: an accent swatch may live in another table (the starter
-  //    lists "Accent Green" under Secondary Colors).
-  if (!colors.accent.base) {
-    for (const m of content.matchAll(rowRe)) {
-      if (m[1].trim().toLowerCase().includes('accent')) {
-        colors.accent.base = `#${m[2]}`;
-        break;
+  // Parse Color Palette table
+  const colorMatch = content.match(/### Color Palette[\s\S]*?\n((?:\|.*\n)+)/);
+  if (colorMatch) {
+    const rows = parseMarkdownTable(colorMatch[1]);
+    rows.forEach(cols => {
+      if (cols.length >= 4) {
+        const [role, light, dark] = cols.slice(0, 3).map(stripBackticks);
+        if (role && role !== 'Role' && !role.includes('---')) {
+          const key = role.toLowerCase().replace(/\s+/g, '-');
+          tokens.colors[key] = { light, dark };
+        }
       }
-    }
+    });
   }
 
-  return colors;
-}
-
-/**
- * Generate color scale from base color (simple approach)
- */
-function generateColorScale(baseHex, darkHex, lightHex) {
-  // Use provided shades or generate approximations
-  return {
-    "50": { "$value": lightHex || adjustBrightness(baseHex, 0.9), "$type": "color" },
-    "100": { "$value": lightHex || adjustBrightness(baseHex, 0.8), "$type": "color" },
-    "200": { "$value": adjustBrightness(baseHex, 0.6), "$type": "color" },
-    "300": { "$value": adjustBrightness(baseHex, 0.4), "$type": "color" },
-    "400": { "$value": adjustBrightness(baseHex, 0.2), "$type": "color" },
-    "500": { "$value": baseHex, "$type": "color" },
-    "600": { "$value": darkHex || adjustBrightness(baseHex, -0.15), "$type": "color" },
-    "700": { "$value": adjustBrightness(baseHex, -0.3), "$type": "color" },
-    "800": { "$value": adjustBrightness(baseHex, -0.45), "$type": "color" },
-    "900": { "$value": adjustBrightness(baseHex, -0.6), "$type": "color" }
-  };
-}
-
-/**
- * Adjust hex color brightness
- */
-function adjustBrightness(hex, percent) {
-  if (typeof hex !== 'string') return '#000000';
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, Math.max(0, (num >> 16) + Math.round(255 * percent)));
-  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + Math.round(255 * percent)));
-  const b = Math.min(255, Math.max(0, (num & 0x0000FF) + Math.round(255 * percent)));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0').toUpperCase()}`;
-}
-
-/**
- * Update design tokens JSON
- */
-function updateDesignTokens(tokens, colors) {
-  // Update brand name
-  const brandName = `ClaudeKit Marketing - ${colors.primary.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`;
-  tokens.brand = brandName;
-
-  // Update primitive colors with new names
-  tokens.primitive = tokens.primitive || {};
-  const primitiveColors = tokens.primitive.color || {};
-
-  // Remove old color keys, add new ones
-  delete primitiveColors.coral;
-  delete primitiveColors.purple;
-  delete primitiveColors.mint;
-
-  // Add new named colors. Skip any role with no base hex rather than crashing
-  // on an unexpected guidelines format.
-  for (const role of ['primary', 'secondary', 'accent']) {
-    const c = colors[role];
-    if (!c.base) {
-      console.warn(`⚠️  No base hex found for ${role} color — skipping its token scale.`);
-      continue;
-    }
-    primitiveColors[c.name] = generateColorScale(c.base, c.dark, c.light);
+  // Parse Gradients table
+  const gradMatch = content.match(/### Gradients[\s\S]*?\n((?:\|.*\n)+)/);
+  if (gradMatch) {
+    const rows = parseMarkdownTable(gradMatch[1]);
+    rows.forEach(cols => {
+      if (cols.length >= 2) {
+        const [name, value, usage] = cols.map(stripBackticks);
+        if (name && name !== 'Name' && !name.includes('---')) {
+          const key = name.toLowerCase().replace(/\s+/g, '-');
+          // Prefer the gradient value (contains linear-gradient)
+          tokens.gradients[key] = value.includes('linear-gradient') ? value : usage;
+        }
+      }
+    });
   }
 
-  tokens.primitive.color = primitiveColors;
-
-  // Update ALL semantic color references
-  if (tokens.semantic?.color) {
-    const sem = tokens.semantic.color;
-    const p = colors.primary.name;
-    const s = colors.secondary.name;
-    const a = colors.accent.name;
-
-    // Primary variants
-    sem.primary = { "$value": `{primitive.color.${p}.500}`, "$type": "color" };
-    sem['primary-hover'] = { "$value": `{primitive.color.${p}.600}`, "$type": "color" };
-    sem['primary-active'] = { "$value": `{primitive.color.${p}.700}`, "$type": "color" };
-    sem['primary-light'] = { "$value": `{primitive.color.${p}.400}`, "$type": "color" };
-    sem['primary-lighter'] = { "$value": `{primitive.color.${p}.100}`, "$type": "color" };
-    sem['primary-dark'] = { "$value": `{primitive.color.${p}.600}`, "$type": "color" };
-
-    // Secondary variants
-    sem.secondary = { "$value": `{primitive.color.${s}.500}`, "$type": "color" };
-    sem['secondary-hover'] = { "$value": `{primitive.color.${s}.600}`, "$type": "color" };
-    sem['secondary-light'] = { "$value": `{primitive.color.${s}.300}`, "$type": "color" };
-    sem['secondary-dark'] = { "$value": `{primitive.color.${s}.600}`, "$type": "color" };
-
-    // Accent variants
-    sem.accent = { "$value": `{primitive.color.${a}.500}`, "$type": "color" };
-    sem['accent-hover'] = { "$value": `{primitive.color.${a}.600}`, "$type": "color" };
-    sem['accent-light'] = { "$value": `{primitive.color.${a}.300}`, "$type": "color" };
-
-    // Status colors (use accent for success, primary for error/info)
-    sem.success = { "$value": `{primitive.color.${a}.500}`, "$type": "color" };
-    sem['success-light'] = { "$value": `{primitive.color.${a}.300}`, "$type": "color" };
-    sem.error = { "$value": `{primitive.color.${p}.500}`, "$type": "color" };
-    sem['error-light'] = { "$value": `{primitive.color.${p}.300}`, "$type": "color" };
-    sem.info = { "$value": `{primitive.color.${s}.500}`, "$type": "color" };
-    sem['info-light'] = { "$value": `{primitive.color.${s}.300}`, "$type": "color" };
+  // Parse Typography table
+  const typoMatch = content.match(/### Typography[\s\S]*?\n((?:\|.*\n)+)/);
+  if (typoMatch) {
+    const rows = parseMarkdownTable(typoMatch[1]);
+    rows.forEach(cols => {
+      if (cols.length >= 2) {
+        const [role, font] = cols.map(stripBackticks);
+        if (role && role !== 'Role' && !role.includes('---')) {
+          const key = role.toLowerCase().replace(/\s+/g, '-');
+          tokens.typography[key] = font.replace(/\*\*/g, '');
+        }
+      }
+    });
   }
 
-  // Update component references (button uses primary color with opacity)
-  if (tokens.component?.button?.secondary && colors.primary.base) {
-    const primaryBase = colors.primary.base;
-    tokens.component.button.secondary['bg-hover'] = {
-      "$value": `${primaryBase}1A`,
-      "$type": "color"
-    };
+  // Parse Spacing (from markdown list format: - `--space-xs`: `4px` / `0.25rem`)
+  const spacingMatches = content.matchAll(/--space-(\w+):\s*`([^`]+)`/g);
+  for (const match of spacingMatches) {
+    tokens.spacing[match[1]] = match[2].trim();
+  }
+
+  // Parse Border Radius table
+  const radiusMatch = content.match(/### Border Radius[\s\S]*?\n((?:\|.*\n)+)/);
+  if (radiusMatch) {
+    const rows = parseMarkdownTable(radiusMatch[1]);
+    rows.forEach(cols => {
+      if (cols.length >= 2) {
+        const [size, value] = cols.slice(0, 2).map(stripBackticks);
+        if (size && size !== 'Size' && !size.includes('---')) {
+          const key = size.toLowerCase().replace(/\s+/g, '-');
+          tokens.borderRadius[key] = value;
+        }
+      }
+    });
+  }
+
+  // Parse Shadows table
+  const shadowMatch = content.match(/### Shadows[\s\S]*?\n((?:\|.*\n)+)/);
+  if (shadowMatch) {
+    const rows = parseMarkdownTable(shadowMatch[1]);
+    rows.forEach(cols => {
+      if (cols.length >= 2) {
+        const [level, value] = cols.slice(0, 2).map(stripBackticks);
+        if (level && level !== 'Level' && !level.includes('---')) {
+          const key = level.toLowerCase().replace(/\s+/g, '-');
+          tokens.shadows[key] = value;
+        }
+      }
+    });
   }
 
   return tokens;
 }
 
-/**
- * Main
- */
+function generateJSON(tokens) {
+  const output = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "version": "1.0.0",
+    "source": "docs/brand-guidelines.md",
+    "colors": { light: {}, dark: {} },
+    "gradients": tokens.gradients,
+    "typography": tokens.typography,
+    "spacing": tokens.spacing,
+    "borderRadius": tokens.borderRadius,
+    "shadows": tokens.shadows
+  };
+
+  Object.entries(tokens.colors).forEach(([key, val]) => {
+    output.colors.light[key] = val.light;
+    output.colors.dark[key] = val.dark;
+  });
+
+  return JSON.stringify(output, null, 2);
+}
+
+function generateCSS(tokens) {
+  let css = '/* Auto-generated from docs/brand-guidelines.md */\n';
+  css += '/* Do not edit directly — edit brand-guidelines.md and run sync script */\n\n';
+
+  css += ':root {\n';
+  Object.entries(tokens.colors).forEach(([key, val]) => {
+    css += `  --color-${key}: ${val.light};\n`;
+  });
+  Object.entries(tokens.gradients).forEach(([key, val]) => {
+    css += `  --gradient-${key}: ${val};\n`;
+  });
+  Object.entries(tokens.typography).forEach(([key, val]) => {
+    css += `  --font-${key}: ${val};\n`;
+  });
+  Object.entries(tokens.spacing).forEach(([key, val]) => {
+    css += `  --space-${key}: ${val};\n`;
+  });
+  Object.entries(tokens.borderRadius).forEach(([key, val]) => {
+    css += `  --radius-${key}: ${val};\n`;
+  });
+  Object.entries(tokens.shadows).forEach(([key, val]) => {
+    css += `  --shadow-${key}: ${val};\n`;
+  });
+  css += '}\n\n';
+
+  css += '.dark {\n';
+  Object.entries(tokens.colors).forEach(([key, val]) => {
+    css += `  --color-${key}: ${val.dark};\n`;
+  });
+  css += '}\n';
+
+  return css;
+}
+
 function main() {
-  const dryRun = process.argv.includes('--dry-run');
+  try {
+    const content = fs.readFileSync(GUIDELINES_PATH, 'utf8');
+    const tokens = parseGuidelines(content);
 
-  console.log('🔄 Syncing brand guidelines → design tokens\n');
+    const json = generateJSON(tokens);
+    fs.writeFileSync(TOKENS_JSON_PATH, json);
+    console.log(`✅ Generated ${TOKENS_JSON_PATH}`);
 
-  // Read brand guidelines
-  const guidelinesPath = path.resolve(process.cwd(), BRAND_GUIDELINES);
-  if (!fs.existsSync(guidelinesPath)) {
-    console.error(`❌ Brand guidelines not found: ${guidelinesPath}`);
+    const css = generateCSS(tokens);
+    fs.writeFileSync(TOKENS_CSS_PATH, css);
+    console.log(`✅ Generated ${TOKENS_CSS_PATH}`);
+
+  } catch (err) {
+    console.error('❌ Sync failed:', err.message);
     process.exit(1);
   }
-  const guidelinesContent = fs.readFileSync(guidelinesPath, 'utf-8');
-
-  // Extract colors
-  const colors = extractColorsFromMarkdown(guidelinesContent);
-  console.log('📊 Extracted colors:');
-  console.log(`   Primary: ${colors.primary.name} (${colors.primary.base})`);
-  console.log(`   Secondary: ${colors.secondary.name} (${colors.secondary.base})`);
-  console.log(`   Accent: ${colors.accent.name} (${colors.accent.base})\n`);
-
-  // Read existing tokens
-  const tokensPath = path.resolve(process.cwd(), DESIGN_TOKENS_JSON);
-  let tokens = {};
-  if (fs.existsSync(tokensPath)) {
-    tokens = JSON.parse(fs.readFileSync(tokensPath, 'utf-8'));
-  }
-
-  // Update tokens
-  tokens = updateDesignTokens(tokens, colors);
-
-  if (dryRun) {
-    console.log('📋 Would update design-tokens.json:');
-    console.log(JSON.stringify(tokens.primitive.color, null, 2).slice(0, 500) + '...');
-    console.log('\n⏭️  Dry run - no files changed');
-    return;
-  }
-
-  // Write updated tokens
-  fs.writeFileSync(tokensPath, JSON.stringify(tokens, null, 2));
-  console.log(`✅ Updated: ${DESIGN_TOKENS_JSON}`);
-
-  // Regenerate CSS
-  const generateScript = path.resolve(process.cwd(), GENERATE_TOKENS_SCRIPT);
-  if (fs.existsSync(generateScript)) {
-    try {
-      execFileSync('node', [generateScript, '--config', DESIGN_TOKENS_JSON, '-o', DESIGN_TOKENS_CSS], {
-        cwd: process.cwd(),
-        stdio: 'inherit'
-      });
-      console.log(`✅ Regenerated: ${DESIGN_TOKENS_CSS}`);
-    } catch (e) {
-      console.error('⚠️  Failed to regenerate CSS:', e.message);
-    }
-  }
-
-  console.log('\n✨ Brand sync complete!');
 }
 
 main();
