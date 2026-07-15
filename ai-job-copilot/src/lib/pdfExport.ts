@@ -7,7 +7,7 @@ export function downloadAsPDF(text: string, filename: string) {
   let y = 20;
   const lh = 5.5;
   const gap = 2.5;
-  let pageBottom = 282;
+  const pageBottom = 282;
 
   function newPageIfNeeded(extra = 0) {
     if (y + extra > pageBottom) { doc.addPage(); y = 20; }
@@ -62,7 +62,7 @@ export function downloadAsPDF(text: string, filename: string) {
   function sanitizeTextForPdf(input: string) {
     if (!input) return input;
     // Remove zero-width/soft-hyphen characters that break words
-    let s = input.replace(/\u00AD|\u200B|\u200C|\u200D|\uFEFF/g, "");
+    const s = input.replace(/\u00AD|\u200B|\u200C|\u200D|\uFEFF/g, "");
     // Normalize CRLF
     const lines = s.split(/\r?\n/);
     const out: string[] = [];

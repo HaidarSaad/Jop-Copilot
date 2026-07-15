@@ -4,6 +4,13 @@ import * as pdfjsLib from "pdfjs-dist";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 export function stripImages(text: string): string {
   return text
     .replace(/!\[.*?\]\(.*?\)/g, "")
@@ -94,11 +101,11 @@ export function extractTextFromPDF(file: File): Promise<string> {
         for (let i = 1; i <= doc.numPages; i++) {
           const page = await doc.getPage(i);
           const content = await page.getTextContent();
-          const strings = content.items.map((item: any) => item.str);
+          const strings = content.items.map((item: unknown) => typeof item === "object" && item !== null && "str" in item ? (item as { str: string }).str : "").filter(Boolean);
           text += strings.join(" ") + "\n";
         }
         resolve(text);
-      } catch (e) {
+      } catch {
         reject(new Error("Failed to read PDF. Make sure it's a text-based PDF, not scanned."));
       }
     };

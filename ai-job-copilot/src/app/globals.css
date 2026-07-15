@@ -16,6 +16,7 @@
   --color-muted-fg: #64748B;
   --color-destructive: #DC2626;
   --color-on-destructive: #FFFFFF;
+  --color-ring: #1E3A5F;
 }
 
 .dark {
@@ -32,6 +33,7 @@
   --color-muted-fg: #94A3B8;
   --color-destructive: #EF4444;
   --color-on-destructive: #FFFFFF;
+  --color-ring: #3B82F6;
 }
 
 @theme inline {
@@ -48,7 +50,8 @@
   --color-on-accent: var(--color-on-accent);
   --color-destructive: var(--color-destructive);
   --color-on-destructive: var(--color-on-destructive);
-  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --color-ring: var(--color-ring);
+  --font-sans: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 }
 
@@ -65,3 +68,88 @@ body {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #94A3B8; border-radius: 3px; }
+
+/* Focus visible styles for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Content visibility for long lists */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 200px;
+}
+
+/* Smooth transitions for interactive elements */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+a,
+input:not(:disabled),
+textarea:not(:disabled),
+select:not(:disabled) {
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+}
+
+/* Hover states should not shift layout */
+button:hover:not(:disabled),
+[role="button"]:hover:not(:disabled) {
+  transform: none;
+}
+
+/* Active/pressed state */
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Card hover effect */
+.card-hover:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Toast slide in/out animations */
+@keyframes slide-in-from-top {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slide-out-to-right {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+[data-state="open"] {
+  animation: slide-in-from-top 0.3s ease-out;
+}
+
+[data-state="closed"] {
+  animation: fade-out 0.2s ease-in, slide-out-to-right 0.3s ease-in;
+}

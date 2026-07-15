@@ -13,15 +13,13 @@ interface Props {
 const t = (lang: "ar" | "en") => (ar: string, en: string) => lang === "ar" ? ar : en;
 
 export default function Settings({ language, onClose, onClearAll }: Props) {
-  const [apiKey, setApiKey] = useState("");
-  const [provider, setProvider] = useState("gemini");
+  const [apiKey, setApiKey] = useState(() => storage.getApiKey());
+  const [provider, setProvider] = useState(() => storage.getProvider());
   const [saved, setSaved] = useState(false);
   const [animIn, setAnimIn] = useState(false);
   const loc = t(language);
 
   useEffect(() => {
-    setApiKey(storage.getApiKey());
-    setProvider(storage.getProvider());
     requestAnimationFrame(() => setAnimIn(true));
   }, []);
 
