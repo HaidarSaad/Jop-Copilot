@@ -1,53 +1,34 @@
 # Job Copilot — AGENTS.md
 
-## Commands
-- `npm run dev` / `npm run build` (both use `--webpack` for win32 SWC, set in package.json)
-- `npm run start -- -p <port>`
-- `npm run lint` — ESLint 9 (eslint.config.mjs)
-- No tests configured
+This repository is a client-side Next.js 16 app for generating tailored CVs, cover letters, LinkedIn messages, and interview prep content from a five-step wizard.
 
-## Architecture & Conventions
-- **Next.js 16.2.9** App Router, **React 19**, **TypeScript 5**, **Tailwind CSS 4** (`@import "tailwindcss"` + `@custom-variant dark` — NOT v3 tailwind.config.js)
-- **No SSR**: `src/app/page.tsx` dynamically imports `Wizard` with `ssr: false`. Layout has `suppressHydrationWarning` on `<html>`/`<body>` (Grammarly extension).
-- **5-step wizard** (Update CV → Tailor CV → Cover Letter → LinkedIn → Interview). Each step component receives props: `t` (translator fn), `language`, `jobTitle`, `candidateName`.
-- **All AI calls direct from browser** — three callers in `Wizard.tsx` (`callGemini`, `callGroq`, `callOpenAI`). Server route at `src/app/api/generate/route.ts` is unused and lacks Groq.
-- **All state in LocalStorage** (`jc_*` keys) — see `src/lib/storage.ts`. No `.env` files; API key in `jc_api_key`.
-- **Design conventions**: `.opencode/skills/` has 7 skills (banner, brand, design-system, slides, ui-styling, ui-ux-pro-max) — check before making UI/styling changes.
-- **Design system**: CSS variables in `globals.css` (`--color-primary: #1E3A5F`, `--color-accent: #059669`, mapped via `@theme inline` to Tailwind classes like `bg-primary`, `text-accent`). Dark mode reverses via `.dark` selector. **No emojis as structural icons** — use `@phosphor-icons/react` (Phosphor icons). Font: Plus Jakarta Sans (headings/body) + JetBrains Mono (code).
-- **Page structure**: `Wizard.tsx` renders HeroSection + FeaturesGrid (landing) before showing the 5-step wizard. Wizard has a `ProgressBar` component replacing simple pill nav. `Footer.tsx` always rendered via layout.
+## Working commands
+- Run the app with `npm run dev`.
+- Build and verify with `npm run build` and `npm run lint`.
+- No automated tests are configured; use lint and build as the main verification steps.
+- On Windows, the scripts use `--webpack` by design; keep that behavior intact when changing package scripts.
 
-## AI Providers
-| Provider | Model | Status |
-|----------|-------|--------|
-| Gemini | `gemini-2.0-flash` | Quota exhausted (429) |
-| Groq | `llama-3.3-70b-versatile` | Working (preferred) |
-| OpenAI | `gpt-4o-mini` | Fallback |
+## Architecture at a glance
+- The main experience lives in `src/components/Wizard.tsx` and the step components under `src/components/`.
+- The wizard is client-only. If a new UI piece needs browser-only behavior, prefer `next/dynamic` with `ssr: false` rather than introducing server assumptions.
+- State is persisted in `localStorage` through `src/lib/storage.ts` using the `jc_*` keys. Do not move this to a server API unless explicitly requested.
+- AI calls are made directly from the browser in `src/components/Wizard.tsx` (Groq is preferred, OpenAI is fallback, Gemini is last resort). The API key is stored in local storage as `jc_api_key`.
+- Prompt templates and CV formatting rules live in `src/lib/prompts.ts` and `src/lib/utils.ts`.
 
-- Storage default provider is `"groq"` — switch away only if Groq is unavailable
-- `sanitizePrompt()` strips file paths and bare filenames before every API call (prevents Gemini "does not support input" errors)
+## Conventions to follow
+- Keep UI changes aligned with the design system in [docs/brand-guidelines.md](docs/brand-guidelines.md) and the CSS variables in `src/app/globals.css`.
+- Prefer `@phosphor-icons/react` over emoji for structural icons.
+- Preserve the existing English-only AI output behavior and the prompt sanitization logic that strips file paths and filenames before API calls.
+- Follow the CV structure expected by the prompts: section headings, separators, bullet points, and the add-marker convention used in step 1.
+- When adding a new wizard step, keep the prop shape consistent with the current steps: `t`, `language`, `jobTitle`, and `candidateName`.
 
-## CV Format (enforced in all prompts)
-```
-## Section Title
----
-**Company Name** - Job Title | Date
-- Bullet point
-```
-- `[ADD]...[/ADD]` markers in Step 1 (green highlighting; stripped before download via `stripAddMarkers()`)
-- `---START CV---` / `---END CV---` delimiters in prompts to reduce hallucination
-- `tailorCV` prompt explicitly instructs AI to place personal info at the top of the Tailored CV section
+## Important gotchas
+- The wizard flow is not SSR-friendly; avoid server-only assumptions in new components.
+- PDF upload is text-based only and does not perform OCR.
+- Do not introduce placeholders or buzzwords into generated content; the prompts already enforce this.
 
-## Download Filename
-`{candidateName}-{jobTitle}-{suffix}.pdf`
-- `sanitizeForFilename` preserves spaces and case (strips `<>:"/\\|?*`)
-- Tailored CV download calls `extractTailoredCV()` at download time only (strips `## Tailored CV` header and bracketed description line; raw stored value retains both sections)
-
-## Gotchas
-1. Build uses `--webpack` — win32 SWC bindings missing
-2. Dark mode: `jc_dark_mode` + inline `<script>` in layout.tsx before React hydrates
-3. English UI default; Arabic toggle. All AI output in English only
-4. Step 1 clears `oldCv` after generating `updCv`; subsequent steps use `updCv` or `tailCv`
-5. PDF upload only works for text-based PDFs (uses pdfjs-dist with CDN worker, no OCR)
-6. Prompts forbid placeholders, hypotheticals, and buzzwords
-7. API keys shown in plain text (`type="text"`) to allow paste
-8. `html2canvas` in `package.json` deps but never imported in source code
+## Where to look first
+- [README.md](README.md) for setup details.
+- [docs/brand-guidelines.md](docs/brand-guidelines.md) for visual and copy conventions.
+- `src/lib/prompts.ts` and `src/lib/utils.ts` for prompt and formatting logic.
+- `src/lib/storage.ts` for persistence behavior.

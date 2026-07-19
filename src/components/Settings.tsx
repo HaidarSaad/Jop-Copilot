@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { X, Check, LockKey } from "@phosphor-icons/react";
 import { storage } from "@/lib/storage";
 
+type Provider = "groq" | "gemini" | "openai";
+
 interface Props {
   language: "ar" | "en";
   onClose: () => void;
@@ -14,7 +16,7 @@ const t = (lang: "ar" | "en") => (ar: string, en: string) => lang === "ar" ? ar 
 
 export default function Settings({ language, onClose, onClearAll }: Props) {
   const [apiKey, setApiKey] = useState(() => storage.getApiKey());
-  const [provider, setProvider] = useState(() => storage.getProvider());
+  const [provider, setProvider] = useState<Provider>(() => storage.getProvider() as Provider);
   const [saved, setSaved] = useState(false);
   const [animIn, setAnimIn] = useState(false);
   const loc = t(language);
@@ -37,7 +39,7 @@ export default function Settings({ language, onClose, onClearAll }: Props) {
     onClearAll?.();
   };
 
-  const options = [
+  const options: Array<{ id: Provider; label: string; desc: string }> = [
     { id: "groq", label: "Groq Llama 3 (Recommended)", desc: loc("مجاني (30 طلب/دقيقة)", "Free (30 req/min)") },
     { id: "gemini", label: "Gemini 2.0 Flash", desc: loc("مجاني (1500/يوم)", "Free (1500/day)") },
     { id: "openai", label: "OpenAI GPT-4o-mini", desc: loc("مدفوع (رخيص جداً)", "Paid (very cheap)") },

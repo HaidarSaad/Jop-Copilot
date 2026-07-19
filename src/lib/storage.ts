@@ -15,6 +15,14 @@ const KEYS = {
   DARK_MODE: "jc_dark_mode",
 } as const;
 
+const VALID_PROVIDERS = ["groq", "openai", "gemini"] as const;
+
+type Provider = (typeof VALID_PROVIDERS)[number];
+
+function isValidProvider(value: string | null | undefined): value is Provider {
+  return typeof value === "string" && VALID_PROVIDERS.includes(value as Provider);
+}
+
 function getItem<T>(key: string): T | null {
   if (typeof window === "undefined") return null;
   try {
@@ -38,13 +46,14 @@ export const storage = {
   setApiKey: (v: string) => setItem(KEYS.API_KEY, v),
   getProvider: () => {
     const saved = getItem<string>(KEYS.PROVIDER);
-    // Only allow valid providers, default to groq
-    if (saved === "groq" || saved === "openai") return saved;
-    // If it's "gemini" or anything else, reset to groq
+    if (isValidProvider(saved)) return saved;
     if (saved) { setItem(KEYS.PROVIDER, "groq"); }
     return "groq";
   },
-  setProvider: (v: string) => setItem(KEYS.PROVIDER, v),
+  setProvider: (v: string) => {
+    const next = isValidProvider(v) ? v : "groq";
+    setItem(KEYS.PROVIDER, next);
+  },
   getOldCv: () => getItem<string>(KEYS.OLD_CV) ?? "",
   setOldCv: (v: string) => setItem(KEYS.OLD_CV, v),
   getExperiencePoints: () => getItem<string>(KEYS.EXPERIENCE_POINTS) ?? "",
