@@ -137,7 +137,7 @@ Base unit: `4px` (Tailwind 4 default)
 | **Speed** | Applications in minutes, not hours | 5-step wizard • Parallel AI calls • Instant PDF export |
 | **Quality** | ATS-optimized, recruiter-ready | Keyword matching • Missing keyword analysis • Professional formatting |
 | **Control** | Your data, your keys, your device | LocalStorage only • No backend • API keys in browser |
-| **Flexibility** | Three AI providers, one workflow | Groq (free) • OpenAI (cheap) • Gemini (fallback) |
+| **Flexibility** | Groq-only workflow | Groq (free) |
 
 ### Value Propositions
 

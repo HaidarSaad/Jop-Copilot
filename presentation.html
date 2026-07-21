@@ -625,7 +625,7 @@
                 </div>
                 <div class="card">
                     <h3 style="text-align: left; margin-bottom: var(--space-sm);">🔒 Client-Side AI</h3>
-                    <p class="text-muted" style="text-align: left;">No backend API calls. Keys stored in localStorage. Direct browser → Groq/Gemini/OpenAI. Prompt sanitization strips file paths.</p>
+                    <p class="text-muted" style="text-align: left;">No backend API calls. Keys stored in localStorage. Direct browser → Groq only. Prompt sanitization strips file paths.</p>
                 </div>
             </div>
         </div>
@@ -636,33 +636,19 @@
          ============================================================ -->
     <div class="slide">
         <div class="slide-content animate-fade-up">
-            <h1 class="slide-title">Flexible AI Providers</h1>
-            <p class="text-muted" style="margin-bottom: var(--space-xl);">Choose the model that fits your workflow</p>
+            <h1 class="slide-title">Groq-Powered AI</h1>
+            <p class="text-muted" style="margin-bottom: var(--space-xl);">Single-provider workflow with Groq only</p>
             <div class="slide-comparison animate-stagger">
                 <div class="comparison-card" style="border-top: 4px solid #FF6B6B;">
-                    <h3 style="color: #FF6B6B;">Gemini 2.0 Flash</h3>
-                    <div class="comparison-row"><span class="label">Cost</span><span class="value">Free (1,500/day)</span></div>
-                    <div class="comparison-row"><span class="label">Quota</span><span class="value">Often exhausted</span></div>
-                    <div class="comparison-row"><span class="label">Speed</span><span class="value">Fast</span></div>
-                    <div class="comparison-row"><span class="label">Best for</span><span class="value">Light usage</span></div>
-                </div>
-                <div class="comparison-card" style="border-top: 4px solid var(--color-accent);">
                     <h3 style="color: var(--color-accent);">Groq Llama 3.3 70B</h3>
                     <div class="comparison-row"><span class="label">Cost</span><span class="value">Free (30 req/min)</span></div>
                     <div class="comparison-row"><span class="label">Quota</span><span class="value">Reliable</span></div>
                     <div class="comparison-row"><span class="label">Speed</span><span class="value">⚡ Fastest</span></div>
                     <div class="comparison-row"><span class="label">Best for</span><span class="value">Daily driver</span></div>
                 </div>
-                <div class="comparison-card" style="border-top: 4px solid #6366F1;">
-                    <h3 style="color: #6366F1;">OpenAI GPT-4o-mini</h3>
-                    <div class="comparison-row"><span class="label">Cost</span><span class="value">~$0.15/1M tokens</span></div>
-                    <div class="comparison-row"><span class="label">Quota</span><span class="value">Pay-as-you-go</span></div>
-                    <div class="comparison-row"><span class="label">Speed</span><span class="value">Fast</span></div>
-                    <div class="comparison-row"><span class="label">Best for</span><span class="value">Fallback</span></div>
-                </div>
             </div>
             <p class="text-muted" style="margin-top: var(--space-xl); max-width: 600px;">
-                Default: Groq (recommended). Auto-fallback to OpenAI if Groq fails. Switch anytime in Settings.
+                Default: Groq only. Switch anytime in Settings.
             </p>
         </div>
     </div>

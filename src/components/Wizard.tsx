@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { storage } from "@/lib/storage";
-import { PROMPTS } from "@/lib/prompts";
-import { extractJobTitle, extractCandidateName, sanitizePrompt } from "@/lib/utils";
-import { Gear, Sun, Moon, Robot, Translate } from "@phosphor-icons/react";
+import { PROMPTS, generateWithFallback } from "@/lib/ai";
+import { ensureIndex, retrieveContext, clearIndex, type RagSource } from "@/lib/rag";
+import { extractJobTitle, extractCandidateName } from "@/lib/utils";
+import { Gear, Sun, Moon, Robot, Translate, Database } from "@phosphor-icons/react";
 import Settings from "./Settings";
 import HeroSection from "./HeroSection";
 import FeaturesGrid from "./FeaturesGrid";
@@ -28,54 +29,6 @@ const StepCoverLetter = dynamic(() => import("./StepCoverLetter"), { ssr: false 
 const StepLinkedIn = dynamic(() => import("./StepLinkedIn"), { ssr: false });
 const StepInterview = dynamic(() => import("./StepInterview"), { ssr: false });
 
-async function callGemini(apiKey: string, prompt: string) {
-  const clean = sanitizePrompt(prompt);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: clean }] }] }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    const msg = data?.error?.message || JSON.stringify(data);
-    if (res.status === 429) throw new Error("Gemini API quota exhausted. Use Groq or OpenAI in Settings.");
-    if (msg.includes("does not support") && msg.includes("input")) {
-      throw new Error("Gemini detected a filename or file path in your text. Remove any file names (like image.png, file.pdf, C:\\...) or paste as plain text and try again, or switch to Groq.");
-    }
-    throw new Error(`Gemini: ${msg}`);
-  }
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-}
-
-async function callGroq(apiKey: string, prompt: string) {
-  const clean = sanitizePrompt(prompt);
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: clean }],
-      max_tokens: 2048,
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || "Groq error");
-  return data?.choices?.[0]?.message?.content || "";
-}
-
-async function callOpenAI(apiKey: string, prompt: string) {
-  const clean = sanitizePrompt(prompt);
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "user", content: clean }], max_tokens: 2048 }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || "OpenAI error");
-  return data?.choices?.[0]?.message?.content || "";
-}
-
 export default function Wizard() {
   const [cs, setCs] = useState<string>("update-cv");
   const [lang, setLang] = useState<"ar" | "en">(() => {
@@ -97,11 +50,19 @@ export default function Wizard() {
   const [intQ, setIntQ] = useState(() => storage.getInterviewQuestions());
   const [ats, setAts] = useState("");
   const [tone, setTone] = useState<"junior" | "mid" | "executive">("mid");
+  const [ragActive, setRagActive] = useState(false);
   const jobTitle = extractJobTitle(jobDesc);
   const cvForName = updCv || oldCv;
   const candidateName = extractCandidateName(cvForName) || "";
   const t = useCallback((ar: string, en: string) => lang === "ar" ? ar : en, [lang]);
   const { toast } = useToast();
+
+  const ragSources: RagSource[] = [
+    { id: "old-cv", label: "Original CV", text: oldCv },
+    { id: "updated-cv", label: "Updated CV", text: updCv },
+    { id: "experience-notes", label: "Experience Notes", text: expPts },
+    { id: "job-description", label: "Job Description", text: jobDesc },
+  ].filter(source => source.text.trim().length > 0);
 
   useEffect(() => {
     if (dark) document.documentElement.classList.add("dark");
@@ -120,15 +81,26 @@ export default function Wizard() {
     setLoading(true);
     try {
       const key = storage.getApiKey();
-      const prov = storage.getProvider();
       if (!key) { setShowSettings(true); throw new Error("Add API key in Settings first"); }
-      return prov === "openai" ? await callOpenAI(key, prompt) : prov === "groq" ? await callGroq(key, prompt) : await callGemini(key, prompt);
+      let finalPrompt = prompt;
+      let indexedCount = 0;
+      if (ragSources.length > 0) {
+        indexedCount = await ensureIndex(ragSources, "groq", key);
+      }
+      setRagActive(indexedCount > 0);
+      if (indexedCount > 0) {
+        const context = await retrieveContext(prompt, 4, "groq", key);
+        if (context) {
+          finalPrompt = `Relevant context from your documents:\n${context}\n\n---\n\n${prompt}`;
+        }
+      }
+      return await generateWithFallback(finalPrompt, key);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast({ title: "Error", description: msg, variant: "destructive" });
       return null;
     } finally { setLoading(false); }
-  }, [toast]);
+  }, [toast, ragSources]);
 
   const h = (fn: () => Promise<string | null>, setter: (v: string) => void) => async () => {
     const r = await fn();
@@ -146,6 +118,11 @@ export default function Wizard() {
           <div className="flex items-center gap-3">
             <Robot size={24} className="text-primary dark:text-secondary" weight="fill" />
             <h1 className="text-xl font-bold text-slate-800 dark:text-white">{t("مساعد التقديم الذكي", "Job Copilot")}</h1>
+            {ragActive && (
+              <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Database size={12} />RAG
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => { const next = lang === "ar" ? "en" : "ar"; setLang(next); storage.setLanguage(next); }} className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1.5">
@@ -161,7 +138,7 @@ export default function Wizard() {
         </div>
       </header>
 
-      {showSettings && <Settings language={lang} onClose={() => setShowSettings(false)} onClearAll={() => { setLang("en"); setDark(false); storage.setLanguage("en"); storage.setDarkMode(false); document.documentElement.classList.remove("dark"); }} />}
+      {showSettings && <Settings language={lang} onClose={() => setShowSettings(false)} onClearAll={() => { clearIndex(); setLang("en"); setDark(false); setRagActive(false); storage.setLanguage("en"); storage.setDarkMode(false); document.documentElement.classList.remove("dark"); }} />}
 
       {showHero ? (
         <>

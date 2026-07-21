@@ -12,7 +12,7 @@ This repository is a client-side Next.js 16 app for generating tailored CVs, cov
 - The main experience lives in `src/components/Wizard.tsx` and the step components under `src/components/`.
 - The wizard is client-only. If a new UI piece needs browser-only behavior, prefer `next/dynamic` with `ssr: false` rather than introducing server assumptions.
 - State is persisted in `localStorage` through `src/lib/storage.ts` using the `jc_*` keys. Do not move this to a server API unless explicitly requested.
-- AI calls are made directly from the browser in `src/components/Wizard.tsx` (Groq is preferred, OpenAI is fallback, Gemini is last resort). The API key is stored in local storage as `jc_api_key`.
+- AI calls are made directly from the browser in `src/components/Wizard.tsx` using Groq only. The API key is stored in local storage as `jc_api_key`.
 - Prompt templates and CV formatting rules live in `src/lib/prompts.ts` and `src/lib/utils.ts`.
 
 ## Conventions to follow

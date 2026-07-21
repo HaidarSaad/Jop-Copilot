@@ -3,6 +3,7 @@
 const KEYS = {
   API_KEY: "jc_api_key",
   PROVIDER: "jc_provider",
+  RAG_INDEX: "jc_rag_state_v1",
   OLD_CV: "jc_old_cv",
   EXPERIENCE_POINTS: "jc_exp_points",
   UPDATED_CV: "jc_updated_cv",
@@ -14,14 +15,6 @@ const KEYS = {
   LANGUAGE: "jc_lang",
   DARK_MODE: "jc_dark_mode",
 } as const;
-
-const VALID_PROVIDERS = ["groq", "openai", "gemini"] as const;
-
-type Provider = (typeof VALID_PROVIDERS)[number];
-
-function isValidProvider(value: string | null | undefined): value is Provider {
-  return typeof value === "string" && VALID_PROVIDERS.includes(value as Provider);
-}
 
 function getItem<T>(key: string): T | null {
   if (typeof window === "undefined") return null;
@@ -44,16 +37,8 @@ function removeItem(key: string) {
 export const storage = {
   getApiKey: () => getItem<string>(KEYS.API_KEY) ?? "",
   setApiKey: (v: string) => setItem(KEYS.API_KEY, v),
-  getProvider: () => {
-    const saved = getItem<string>(KEYS.PROVIDER);
-    if (isValidProvider(saved)) return saved;
-    if (saved) { setItem(KEYS.PROVIDER, "groq"); }
-    return "groq";
-  },
-  setProvider: (v: string) => {
-    const next = isValidProvider(v) ? v : "groq";
-    setItem(KEYS.PROVIDER, next);
-  },
+  getProvider: () => "groq",
+  setProvider: () => setItem(KEYS.PROVIDER, "groq"),
   getOldCv: () => getItem<string>(KEYS.OLD_CV) ?? "",
   setOldCv: (v: string) => setItem(KEYS.OLD_CV, v),
   getExperiencePoints: () => getItem<string>(KEYS.EXPERIENCE_POINTS) ?? "",

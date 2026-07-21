@@ -24,10 +24,10 @@ describe("storage", () => {
   });
 
   it("persists values through the browser storage API", () => {
-    storage.setProvider("gemini");
+    storage.setProvider("anything");
     storage.setApiKey("gemini-key");
 
-    expect(localStorage.getItem("jc_provider")).toBe(JSON.stringify("gemini"));
+    expect(localStorage.getItem("jc_provider")).toBe(JSON.stringify("groq"));
     expect(localStorage.getItem("jc_api_key")).toBe(JSON.stringify("gemini-key"));
   });
 
@@ -41,10 +41,12 @@ describe("storage", () => {
     storage.setUpdatedCv("Updated CV");
     storage.setJobDescription("Job description");
     storage.setLanguage("en");
+    localStorage.setItem("jc_rag_state_v1", JSON.stringify({ signature: "sig", updatedAt: Date.now(), chunks: [] }));
     storage.clearAll();
 
     expect(storage.getUpdatedCv()).toBe("");
     expect(storage.getJobDescription()).toBe("");
     expect(storage.getLanguage()).toBe("ar");
+    expect(localStorage.getItem("jc_rag_state_v1")).toBeNull();
   });
 });

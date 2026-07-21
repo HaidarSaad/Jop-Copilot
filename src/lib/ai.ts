@@ -1,3 +1,30 @@
+"use client";
+
+import { ChatGroq } from "@langchain/groq";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { sanitizePrompt } from "@/lib/utils";
+
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+
+function createLLM(apiKey: string) {
+  return new ChatGroq({ model: GROQ_MODEL, apiKey, temperature: 0.3, maxTokens: 2048 });
+}
+
+function createChain(apiKey: string) {
+  const llm = createLLM(apiKey);
+  const prompt = PromptTemplate.fromTemplate("{prompt}");
+  return prompt.pipe(llm).pipe(new StringOutputParser());
+}
+
+export async function generateWithFallback(prompt: string, apiKey: string): Promise<string> {
+  const clean = sanitizePrompt(prompt);
+  const chain = createChain(apiKey);
+  const result = await chain.invoke({ prompt: clean });
+  if (result && typeof result === "string") return result.trim();
+  throw new Error("Empty response");
+}
+
 export const PROMPTS = {
   updateCV: (oldCv: string, newPoints: string) => `
 You are helping someone update their REAL CV with new experience points. You MUST keep all existing data intact and ONLY merge the new points.
@@ -207,3 +234,5 @@ Output format:
 Output in English only.
 `,
 };
+
+export type { Provider };
