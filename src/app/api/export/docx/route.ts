@@ -41,9 +41,16 @@ function parseCvToStructured(cv: string) {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as ReqBody;
+    console.log("[export/docx] request body preview:", { filename: body.filename, cvLength: body.cv?.length });
     const cvText = body.cv || "";
     const data = parseCvToStructured(cvText);
-    const buffer = await generateAtsCV(data as any);
+    let buffer: Buffer;
+    try {
+      buffer = await generateAtsCV(data as any);
+    } catch (inner) {
+      console.error("[export/docx] generateAtsCV error:", inner);
+      throw inner;
+    }
     const filename = body.filename || "CV.docx";
     return new Response(buffer, {
       status: 200,
@@ -53,6 +60,8 @@ export async function POST(req: Request) {
       },
     });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    console.error("[export/docx] handler error:", e);
+    const msg = e instanceof Error ? e.message : JSON.stringify(e);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
