@@ -85,11 +85,11 @@ export default function Wizard() {
       let finalPrompt = prompt;
       let indexedCount = 0;
       if (ragSources.length > 0) {
-        indexedCount = await ensureIndex(ragSources, "groq", key);
+        indexedCount = await ensureIndex(ragSources);
       }
       setRagActive(indexedCount > 0);
       if (indexedCount > 0) {
-        const context = await retrieveContext(prompt, 4, "groq", key);
+        const context = await retrieveContext(prompt, 4);
         if (context) {
           finalPrompt = `Relevant context from your documents:\n${context}\n\n---\n\n${prompt}`;
         }

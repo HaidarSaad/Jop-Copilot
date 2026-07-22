@@ -32,3 +32,8 @@ This repository is a client-side Next.js 16 app for generating tailored CVs, cov
 - [docs/brand-guidelines.md](docs/brand-guidelines.md) for visual and copy conventions.
 - `src/lib/prompts.ts` and `src/lib/utils.ts` for prompt and formatting logic.
 - `src/lib/storage.ts` for persistence behavior.
+
+## Spec-driven workflow
+- Use the local Spec Kit notes in [.specify/README.md](.specify/README.md) when scoping new work.
+- Treat [.specify/constitution.md](.specify/constitution.md) as the project-level source of truth for planning decisions.
+- Keep feature-level spec artifacts under `.specify/specs/` so brownfield changes stay separated from implementation code.

@@ -235,4 +235,4 @@ Output in English only.
 `,
 };
 
-export type { Provider };
+// removed unused export 'Provider' which caused type error during build

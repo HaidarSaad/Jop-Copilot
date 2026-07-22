@@ -237,10 +237,9 @@ export function hasIndex(): boolean {
   return ensureHydrated();
 }
 
-export function indexStale(provider: string, apiKey: string, sources?: RagSource[]): boolean {
+export function indexStale(sources?: RagSource[]): boolean {
   if (store.length === 0) return true;
-  if (currentProvider !== provider) return true;
   if (!sources) return false;
   const signature = buildSignature(sources.filter(source => normalizeText(source.text).length > 0));
-  return currentSignature !== signature || currentApiKey !== apiKey;
+  return currentSignature !== signature;
 }

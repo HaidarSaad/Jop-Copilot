@@ -1,4 +1,12 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) project for generating tailored CVs, cover letters, LinkedIn messages, and interview prep content from a five-step wizard.
+
+## Spec-driven workflow
+
+This repository uses a lightweight Spec Kit flow for planning brownfield changes before implementation.
+
+- Start with [.specify/README.md](.specify/README.md) for the local workflow.
+- Use [.specify/constitution.md](.specify/constitution.md) as the project principles reference.
+- Keep feature specs under `.specify/specs/` when adding or changing behavior.
 
 ## Getting Started
 
