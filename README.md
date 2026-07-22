@@ -1,44 +1,85 @@
-This is a [Next.js](https://nextjs.org) project for generating tailored CVs, cover letters, LinkedIn messages, and interview prep content from a five-step wizard.
+# ATS CV Generator
 
-## Spec-driven workflow
+Turns structured CV data into an ATS-friendly `.docx` file:
+single column, one font (Calibri), no tables/text-boxes/images/columns,
+clear bordered section headings, simple `-` bullet lists.
 
-This repository uses a lightweight Spec Kit flow for planning brownfield changes before implementation.
-
-- Start with [.specify/README.md](.specify/README.md) for the local workflow.
-- Use [.specify/constitution.md](.specify/constitution.md) as the project principles reference.
-- Keep feature specs under `.specify/specs/` when adding or changing behavior.
-
-## Getting Started
-
-First, run the development server:
+## Install
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install docx
 ```
-// Function to fetch data from API       
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Files
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `generateAtsCV.js` — the library. Exports `generateAtsCV(cvData, options)` → returns a `Buffer`.
+- `example-usage.js` — minimal example of building a CV and writing it to disk.
+- `package.json` — dependency manifest (just `docx`).
 
-## Learn More
+## Data shape (`cvData`)
 
-To learn more about Next.js, take a look at the following resources:
+```js
+{
+  name: "Full Name",
+  contactLine: "City | Phone | Email | LinkedIn",
+  sections: [
+    {
+      heading: "SECTION TITLE",       // rendered as a bold, underlined H2
+      items: [
+        { type: "paragraph", text: "..." },   // plain paragraph
+        { type: "subheader",  text: "..." },  // bold sub-heading (e.g. job title)
+        { type: "bullet",     text: "..." },  // "-" bullet point
+        { type: "paragraph", text: "date range", italics: true }, // optional italics
+      ],
+    },
+    // ...more sections
+  ],
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Feed it sections in whatever order you want them to appear
+(Professional Summary, Education, Certifications, Projects, Skills, Keywords, etc.)
+— the generator doesn't assume a fixed CV structure.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Generate + verify (recommended pipeline)
 
-## Deploy on Vercel
+An agent editing/generating CVs should not just emit the .docx — it should
+render it and visually check the layout before handing it back. That's the
+part that most commonly gets skipped and causes messy output:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# 1. Generate the docx
+node example-usage.js
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# 2. Convert to PDF (requires LibreOffice / soffice on PATH)
+soffice --headless --convert-to pdf output.docx
+
+# 3. Rasterize pages to images for a visual check (requires poppler-utils)
+pdftoppm -jpeg -r 100 output.pdf page
+# -> page-1.jpg, page-2.jpg, ...
+```
+
+Then look at `page-1.jpg` (etc.) to confirm: no overflowing text, no broken
+words, headings/bullets rendering correctly, contact line on one line, no
+orphaned single lines at page breaks.
+
+## Design rules this generator follows (for ATS-safety)
+
+- Single column layout — never use tables or text boxes for layout.
+- One font family throughout (default Calibri; swap via `options.font`).
+- No images, icons, or graphics.
+- Standard section headings as real paragraph/heading text (not embedded in
+  images or SmartArt) so ATS parsers can read them.
+- Bullets are plain `-` characters via Word's native numbering, not Unicode
+  bullet glyphs pasted into text.
+- Dates/locations kept as plain text, not in headers/footers (some ATS
+  parsers drop header/footer content).
+
+## Extending
+
+- To change fonts/sizes/margins, edit the constants at the top of
+  `generateAtsCV.js` (`DEFAULT_FONT`, `size:` values in `buildStyledHelpers`,
+  and the `page.margin` block).
+- To support multi-column skills tables or a two-page limit warning, that
+  logic can be added as a wrapper around `generateAtsCV()` without touching
+  the core rendering.

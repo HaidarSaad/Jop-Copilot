@@ -62,6 +62,27 @@ export default function StepTailorCV({
                 const f = n && t ? `${n}-${t}-Tailored CV.pdf` : (n || t || "CV") + ".pdf";
                 downloadAsPDF(extractTailoredCV(tailoredCv), f);
               }} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"><DownloadSimple size={14} /> PDF</button>
+              <button onClick={async () => {
+                try {
+                  const n = sanitizeForFilename(candidateName || jobTitle || "");
+                  const t = sanitizeForFilename(jobTitle || "");
+                  const fname = n && t ? `${n}-${t}-Tailored CV.docx` : (n || t || "CV") + ".docx";
+                  const res = await fetch("/api/export/docx", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cv: tailoredCv, filename: fname }) });
+                  if (!res.ok) throw new Error("Failed to generate DOCX");
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = fname;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  URL.revokeObjectURL(url);
+                } catch (e) {
+                  console.error(e);
+                  alert("Failed to export DOCX: " + (e instanceof Error ? e.message : String(e)));
+                }
+              }} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"><DownloadSimple size={14} /> Word</button>
               <button onClick={() => setTailoredCv("")} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"><Trash size={14} /></button>
             </div>
           </div>
